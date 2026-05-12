@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Report Diário — Smart GR</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F5F0;
+    --card: #FFFFFF;
+    --primary: #1A1A2E;
+    --accent: #E8642A;
+    --accent-light: #FDF0EA;
+    --green: #2D6A4F;
+    --green-light: #EAF4EE;
+    --red: #C0392B;
+    --red-light: #FDEDEC;
+    --text: #1A1A2E;
+    --text-muted: #7A7A8C;
+    --border: #E8E6E0;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* LAYOUT */
+  .page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 2rem;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--primary);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    margin-bottom: 20px;
+  }
+
+  .logo-dot {
+    width: 7px;
+    height: 7px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  .header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--primary);
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+
+  .header p {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  /* PROGRESS */
+  .progress-wrap {
+    width: 100%;
+    max-width: 480px;
+    margin-bottom: 1.5rem;
+  }
+
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .progress-track {
+    background: var(--border);
+    border-radius: 100px;
+    height: 4px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 4px;
+    background: var(--accent);
+    border-radius: 100px;
+    transition: width 0.4s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* CARD */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.75rem;
+    width: 100%;
+    max-width: 480px;
+    border: 1px solid var(--border);
+  }
+
+  /* STEP */
+  .screen { display: none; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; width: 100%; }
+  .step { display: none; width: 100%; }
+  .step.active { display: block; animation: fadeUp 0.25s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .step-eyebrow {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 8px;
+  }
+
+  .step h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+
+  .step .hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  /* OPTION BUTTONS */
+  .opt-grid { display: grid; gap: 8px; margin-bottom: 24px; }
+  .opt-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .opt-grid.cols-1 { grid-template-columns: 1fr; }
+
+  .opt {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .opt:hover { border-color: var(--accent); background: var(--accent-light); }
+  .opt.sel {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    color: var(--accent);
+  }
+
+  .opt-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .opt.sel .opt-icon { background: rgba(232,100,42,0.15); }
+
+  /* VENDEDOR ROWS */
+  .vendedor-section { margin-bottom: 20px; }
+
+  .vendedor-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .vendedor-row:last-child { border-bottom: none; }
+
+  .v-nome {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    min-width: 0;
+  }
+  .v-nome span {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .v-input {
+    width: 100px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 7px 10px;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    text-align: right;
+    transition: border-color 0.15s;
+    flex-shrink: 0;
+  }
+  .v-input:focus { border-color: var(--accent); background: white; }
+
+  .v-pct {
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: color 0.2s;
+  }
+
+  .loja-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    margin-bottom: 20px;
+    border: 1.5px solid var(--border);
+  }
+  .lt-label { font-size: 12px; color: var(--text-muted); margin-bottom: 2px; }
+  .lt-vals { font-size: 13px; font-family: 'DM Mono', monospace; font-weight: 500; color: var(--text); }
+  .lt-pct { font-size: 28px; font-weight: 600; transition: color 0.3s; }
+
+  /* INPUTS */
+  .field-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+    margin-top: 16px;
+  }
+  .field-label:first-child { margin-top: 0; }
+
+  input[type=number].ifield,
+  input[type=text].ifield {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    margin-bottom: 0;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  input[type=number].ifield:focus,
+  input[type=text].ifield:focus { border-color: var(--accent); background: white; }
+
+  textarea.tfield {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    resize: none;
+    min-height: 100px;
+    line-height: 1.6;
+    transition: border-color 0.15s, background 0.15s;
+    margin-bottom: 0;
+  }
+  textarea.tfield:focus { border-color: var(--accent); background: white; }
+  textarea.tfield::placeholder { color: #B0AEBA; }
+
+  /* TOGGLE SIM/NÃO */
+  .toggle-row { display: flex; gap: 8px; margin-bottom: 20px; }
+  .tog {
+    flex: 1;
+    padding: 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    background: var(--bg);
+    color: var(--text-muted);
+    transition: all 0.15s;
+  }
+  .tog.sim { background: var(--green-light); border-color: var(--green); color: var(--green); }
+  .tog.nao { background: var(--red-light); border-color: var(--red); color: var(--red); }
+
+  .curso-box {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .curso-box.visible { display: block; animation: fadeUp 0.2s ease; }
+  .curso-box .field-label:first-child { margin-top: 0; }
+  .curso-box input { margin-bottom: 12px; }
+  .curso-box input:last-child { margin-bottom: 0; }
+
+  /* BUTTONS */
+  .btn-next {
+    width: 100%;
+    padding: 14px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+    transition: all 0.15s;
+    letter-spacing: 0.01em;
+  }
+  .btn-next:hover { background: #2D2D4A; transform: translateY(-1px); }
+  .btn-next:active { transform: translateY(0); }
+  .btn-next:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+  .btn-next.accent { background: var(--accent); }
+  .btn-next.accent:hover { background: #D4521E; }
+
+  .btn-back {
+    width: 100%;
+    background: none;
+    border: none;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 12px 0 0;
+    font-family: 'DM Sans', sans-serif;
+    transition: color 0.15s;
+  }
+  .btn-back:hover { color: var(--text); }
+
+  /* SENDING */
+  .sending-wrap {
+    text-align: center;
+    padding: 3rem 2rem;
+  }
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .sending-wrap p { font-size: 14px; color: var(--text-muted); }
+
+  /* SUCCESS */
+  .success-wrap { text-align: center; padding: 1rem 0; }
+  .success-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--green-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 26px;
+  }
+  .success-wrap h2 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--primary);
+  }
+  .success-wrap > p {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+
+  .wpp-preview {
+    background: #ECF5E9;
+    border: 1.5px solid #B7DEB0;
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    text-align: left;
+    font-size: 13px;
+    line-height: 1.8;
+    color: #1A3A24;
+    margin-bottom: 16px;
+    white-space: pre-wrap;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .btn-wpp {
+    width: 100%;
+    padding: 13px;
+    background: #25D366;
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    transition: all 0.15s;
+  }
+  .btn-wpp:hover { background: #1ebe5a; }
+
+  .btn-novo {
+    width: 100%;
+    padding: 13px;
+    background: var(--bg);
+    color: var(--text-muted);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-novo:hover { background: var(--border); color: var(--text); }
+
+  /* ERROR */
+  .err-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--red-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 26px;
+  }
+
+  /* FOOTER */
+  .footer {
+    margin-top: 2rem;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    opacity: 0.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="header">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      SMART GR
+    </div>
+    <h1>Report diário</h1>
+    <p id="header-sub">Preencha ao final do expediente</p>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-info">
+      <span id="prog-label">Passo 1 de 6</span>
+      <span id="prog-pct">16%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="prog-fill" style="width:16%"></div>
+    </div>
+  </div>
+
+  <!-- FORM SCREEN -->
+  <div class="screen active" id="sc-form">
+    <div class="card">
+
+      <!-- S1: Loja -->
+      <div class="step active" id="s1">
+        <p class="step-eyebrow">Passo 1 de 6</p>
+        <h2>Qual é a sua unidade?</h2>
+        <p class="hint">Selecione a loja que você lidera</p>
+        <div class="opt-grid cols-1">
+          <button class="opt" onclick="selLoja('Recife')">
+            <span class="opt-icon">📍</span> Recife
+          </button>
+          <button class="opt" onclick="selLoja('Rio Claro')">
+            <span class="opt-icon">📍</span> Rio Claro
+          </button>
+          <button class="opt" onclick="selLoja('São Paulo')">
+            <span class="opt-icon">📍</span> São Paulo
+          </button>
+          <button class="opt" onclick="selLoja('Porto Alegre')">
+            <span class="opt-icon">📍</span> Porto Alegre
+          </button>
+        </div>
+        <p class="field-label" style="margin-top:8px">Data do report</p>
+        <input type="date" class="ifield" id="data-report" style="margin-bottom:0">
+        <button class="btn-next" id="btn1" disabled onclick="goS(2)">
+          Continuar →
+        </button>
+      </div>
+
+      <!-- S2: Vendas -->
+      <div class="step" id="s2">
+        <p class="step-eyebrow">Passo 2 de 6</p>
+        <h2>Vendas de hoje</h2>
+        <p class="hint">Digite o valor vendido por cada pessoa — o % aparece automaticamente</p>
+        <div class="vendedor-section" id="vendedor-list"></div>
+        <div class="loja-total">
+          <div>
+            <div class="lt-label">Total da loja hoje</div>
+            <div class="lt-vals" id="lt-vals">R$ 0 de R$ 0</div>
+          </div>
+          <div class="lt-pct" id="lt-pct" style="color:var(--text-muted)">0%</div>
+        </div>
+        <button class="btn-next" id="btn2" onclick="goS(3)">Continuar →</button>
+        <button class="btn-back" onclick="goS(1)">← Voltar</button>
+      </div>
+
+      <!-- S3: Clientes -->
+      <div class="step" id="s3">
+        <p class="step-eyebrow">Passo 3 de 6</p>
+        <h2>Clientes atendidos</h2>
+        <p class="hint">Quantas pessoas passaram pela loja hoje?</p>
+        <p class="field-label">Número de clientes</p>
+        <input type="number" class="ifield" id="clientes" min="0" placeholder="Ex: 42" oninput="checkNum('clientes','btn3')">
+        <button class="btn-next" id="btn3" disabled onclick="goS(4)">Continuar →</button>
+        <button class="btn-back" onclick="goS(2)">← Voltar</button>
+      </div>
+
+      <!-- S4: Curso -->
+      <div class="step" id="s4">
+        <p class="step-eyebrow">Passo 4 de 6</p>
+        <h2>Teve curso hoje?</h2>
+        <p class="hint">Treinamento, workshop ou palestra</p>
+        <div class="toggle-row">
+          <button class="tog" id="tog-sim" onclick="selCurso(true)">✓ Sim</button>
+          <button class="tog" id="tog-nao" onclick="selCurso(false)">✕ Não</button>
+        </div>
+        <div class="curso-box" id="curso-box">
+          <p class="field-label">Com quem?</p>
+          <input type="text" class="ifield" id="curso-quem" placeholder="Nome do instrutor ou parceiro">
+          <p class="field-label">Qual foi o tema?</p>
+          <input type="text" class="ifield" id="curso-tema" placeholder="Ex: Técnicas de vitrine, atendimento...">
+          <p class="field-label">Quantos alunos?</p>
+          <input type="number" class="ifield" id="curso-alunos" min="0" placeholder="Ex: 8">
+          <p class="field-label">Vendas geradas pelo curso (R$)</p>
+          <input type="number" class="ifield" id="curso-venda" min="0" placeholder="Ex: 1200">
+        </div>
+        <button class="btn-next" id="btn4" disabled onclick="goS(5)">Continuar →</button>
+        <button class="btn-back" onclick="goS(3)">← Voltar</button>
+      </div>
+
+      <!-- S5: Positivo -->
+      <div class="step" id="s5">
+        <p class="step-eyebrow">Passo 5 de 6</p>
+        <h2>Algo positivo do time hoje</h2>
+        <p class="hint">Uma conquista, atitude ou momento que vale registrar</p>
+        <textarea class="tfield" id="positivo" placeholder="Ex: A equipe superou o movimento fraco com proatividade. Fulana fez um atendimento incrível..." oninput="checkTA('positivo','btn5')"></textarea>
+        <button class="btn-next" id="btn5" disabled onclick="goS(6)">Continuar →</button>
+        <button class="btn-back" onclick="goS(4)">← Voltar</button>
+      </div>
+
+      <!-- S6: Produto -->
+      <div class="step" id="s6">
+        <p class="step-eyebrow">Passo 6 de 6</p>
+        <h2>Produto mais falado hoje</h2>
+        <p class="hint">Qual produto gerou mais conversa, dúvida ou interesse?</p>
+        <input type="text" class="ifield" id="produto" placeholder="Ex: Hidratante facial, sérum vitamina C..." oninput="checkField('produto','btn6')">
+        <button class="btn-next accent" id="btn6" disabled onclick="submitForm()">
+          ✓ Enviar report
+        </button>
+        <button class="btn-back" onclick="goS(5)">← Voltar</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SENDING SCREEN -->
+  <div class="screen" id="sc-sending">
+    <div class="card">
+      <div class="sending-wrap">
+        <div class="spinner"></div>
+        <p>Salvando na planilha...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUCCESS SCREEN -->
+  <div class="screen" id="sc-ok">
+    <div class="card">
+      <div class="success-wrap">
+        <div class="success-icon">✓</div>
+        <h2>Report enviado!</h2>
+        <p>Salvo na planilha. Copie a mensagem abaixo e mande no grupo.</p>
+        <div class="wpp-preview" id="wpp-out"></div>
+        <button class="btn-wpp" onclick="copyWpp()" id="btn-copy-wpp">
+          Copiar para o WhatsApp
+        </button>
+        <button class="btn-novo" onclick="novoReport()">Enviar outro report</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ERROR SCREEN -->
+  <div class="screen" id="sc-err">
+    <div class="card">
+      <div class="success-wrap">
+        <div class="err-icon">✕</div>
+        <h2>Erro no envio</h2>
+        <p id="err-msg">Não foi possível salvar. Verifique a conexão e tente novamente.</p>
+        <button class="btn-next accent" onclick="tentarNovamente()">Tentar novamente</button>
+        <button class="btn-back" onclick="novoReport()">Recomeçar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Smart GR · Report diário das unidades</div>
+
+</div><!-- .page -->
+
+<script>
+const SHEETS_URL = 'https://script.google.com/a/macros/smartgr.com.br/s/AKfycbxrIh_vnGJjpXksC02QWoYERjHkBnsjrLlxbXQRmA7vPbjHwaYKfoXWBDPCa3CYWdjj/exec';
+
+// Preenche a data com hoje automaticamente
+window.addEventListener('DOMContentLoaded', () => {
+  const hoje = new Date().toISOString().split('T')[0];
+  document.getElementById('data-report').value = hoje;
+});
+
+const LOJAS = {
+  'Recife': [
+    { nome: 'Renata Adriely da Silva Correia', meta: 40000 },
+    { nome: 'Wanessa Silveira', meta: 40000 },
+    { nome: 'Andresa Silva da Cunha', meta: 40000 },
+    { nome: 'Juliette Cardoso de Freitas Moura', meta: 40000 }
+  ],
+  'Rio Claro': [
+    { nome: 'Gabriel Henrique de Oliveira Martins', meta: 220000 },
+    { nome: 'Maiara Carolina Soares de Toledo', meta: 120000 },
+    { nome: 'Luana Rodrigues da Silva', meta: 90000 },
+    { nome: 'Maristela da Silva', meta: 103000 },
+    { nome: 'Bianca Margarida do Nascimento', meta: 90000 },
+    { nome: 'Bianca Gomes de Souza', meta: 57500 },
+    { nome: 'Laryssa Karla Galvão Pedroso do Amaral', meta: 75000 }
+  ],
+  'São Paulo': [
+    { nome: 'Gabriela Silva do Nascimento', meta: 130000 },
+    { nome: 'Ionara Nogueira Batista', meta: 85000 },
+    { nome: 'Ligia Pereira Carbone', meta: 85000 },
+    { nome: 'Beatriz Cezario', meta: 85000 },
+    { nome: 'Afonso Victor Rodrigues', meta: 85000 },
+    { nome: 'Adassa Joselle Souza do Nascimento', meta: 85000 },
+    { nome: 'Gabriela Alves Tavares', meta: 67500 },
+    { nome: 'Nayra Ferreira Superbi', meta: 67500 },
+    { nome: 'Renan Porfirio Gonzales Reyes Ortiz', meta: 67500 },
+    { nome: 'Paula Machado', meta: 45000 },
+    { nome: 'Camila Lima', meta: 45000 }
+  ],
+  'Porto Alegre': [
+    { nome: 'Giovana Soares', meta: 50000 },
+    { nome: 'Wendy Aparecida Soares', meta: 50000 },
+    { nome: 'Sarah da Silva Braga', meta: 50000 }
+  ]
+};
+
+const st = { loja:'', vendas:{}, clientes:'', curso:null, cursoInfo:{}, positivo:'', produto:'' };
+let curStep = 1;
+let lastEntry = null;
+
+function fmt(v) {
+  return 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+}
+function pct(v, m) { return m > 0 ? Math.round(v / m * 100) : 0; }
+function pctColor(p) {
+  if (p >= 100) return '#2D6A4F';
+  if (p >= 75)  return '#1A6E9F';
+  if (p >= 50)  return '#BA7517';
+  return '#C0392B';
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const showProg = id === 'sc-form';
+  document.getElementById('progress-wrap').style.display = showProg ? 'block' : 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goS(n) {
+  document.getElementById('s' + curStep).classList.remove('active');
+  document.getElementById('s' + n).classList.add('active');
+  curStep = n;
+  const p = Math.round(n / 6 * 100);
+  document.getElementById('prog-fill').style.width = p + '%';
+  document.getElementById('prog-label').textContent = 'Passo ' + n + ' de 6';
+  document.getElementById('prog-pct').textContent = p + '%';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function selLoja(l) {
+  st.loja = l;
+  document.querySelectorAll('#s1 .opt').forEach(o => {
+    o.classList.toggle('sel', o.textContent.trim().includes(l));
+  });
+  document.getElementById('btn1').disabled = false;
+  document.getElementById('header-sub').textContent = l;
+  buildVendedores(l);
+}
+
+function buildVendedores(loja) {
+  const list = document.getElementById('vendedor-list');
+  const vends = LOJAS[loja] || [];
+  st.vendas = {};
+  vends.forEach(v => { st.vendas[v.nome] = 0; });
+  list.innerHTML = vends.map(v => {
+    const id = 'vp_' + v.nome.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+    return `<div class="vendedor-row">
+      <div class="v-nome">
+        ${v.nome.split(' ')[0]} ${v.nome.split(' ').slice(-1)[0]}
+        <span>${fmt(v.meta)}/mês</span>
+      </div>
+      <input type="number" class="v-input" min="0" placeholder="0"
+        data-nome="${v.nome}" data-meta="${v.meta}"
+        oninput="updVenda(this)">
+      <span class="v-pct" id="${id}">0%</span>
+    </div>`;
+  }).join('');
+  updTotal(loja);
+}
+
+function updVenda(el) {
+  const nome = el.dataset.nome;
+  const meta = parseFloat(el.dataset.meta);
+  const val  = parseFloat(el.value) || 0;
+  st.vendas[nome] = val;
+  const p = pct(val, meta);
+  const id = 'vp_' + nome.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  const pel = document.getElementById(id);
+  if (pel) { pel.textContent = p + '%'; pel.style.color = pctColor(p); }
+  updTotal(st.loja);
+}
+
+function updTotal(loja) {
+  const vends = LOJAS[loja] || [];
+  const tm = vends.reduce((a, v) => a + v.meta, 0);
+  const tv = Object.values(st.vendas).reduce((a, v) => a + v, 0);
+  const p  = pct(tv, tm);
+  document.getElementById('lt-vals').textContent = fmt(tv) + ' de ' + fmt(tm);
+  const pel = document.getElementById('lt-pct');
+  pel.textContent = p + '%';
+  pel.style.color = pctColor(p);
+}
+
+function checkNum(id, btnId) {
+  const v = document.getElementById(id).value;
+  st[id] = v;
+  document.getElementById(btnId).disabled = !v || parseFloat(v) < 0;
+}
+
+function selCurso(sim) {
+  st.curso = sim;
+  document.getElementById('tog-sim').className = 'tog' + (sim ? ' sim' : '');
+  document.getElementById('tog-nao').className = 'tog' + (!sim ? ' nao' : '');
+  document.getElementById('curso-box').classList.toggle('visible', sim);
+  document.getElementById('btn4').disabled = false;
+}
+
+function checkTA(id, btnId) {
+  const v = document.getElementById(id).value.trim();
+  st[id] = v;
+  document.getElementById(btnId).disabled = v.length < 3;
+}
+
+function checkField(id, btnId) {
+  const v = document.getElementById(id).value.trim();
+  st[id] = v;
+  document.getElementById(btnId).disabled = v.length < 2;
+}
+
+function submitForm() {
+  st.clientes  = document.getElementById('clientes').value;
+  st.positivo  = document.getElementById('positivo').value.trim();
+  st.produto   = document.getElementById('produto').value.trim();
+  const dataInput = document.getElementById('data-report').value;
+  const dataBR = dataInput
+    ? dataInput.split('-').reverse().join('/')
+    : now.toLocaleDateString('pt-BR');
+  if (st.curso) {
+    st.cursoInfo = {
+      quem:   document.getElementById('curso-quem').value,
+      tema:   document.getElementById('curso-tema').value,
+      alunos: document.getElementById('curso-alunos').value,
+      venda:  document.getElementById('curso-venda').value
+    };
+  }
+  const now   = new Date();
+  const vends = LOJAS[st.loja] || [];
+  const tm    = vends.reduce((a, v) => a + v.meta, 0);
+  const tv    = Object.values(st.vendas).reduce((a, v) => a + v, 0);
+  const entry = {
+    ...JSON.parse(JSON.stringify(st)),
+    pctMeta:    pct(tv, tm),
+    totalVenda: tv,
+    ts:   now.toISOString(),
+    dia:  dataBR,
+    hora: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  };
+  lastEntry = entry;
+  showScreen('sc-sending');
+  fetch(SHEETS_URL, {
+    method:  'POST',
+    mode:    'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(entry)
+  })
+  .then(() => { buildWpp(entry); showScreen('sc-ok'); })
+  .catch(err => {
+    document.getElementById('err-msg').textContent = 'Erro: ' + err.message;
+    showScreen('sc-err');
+  });
+}
+
+function buildWpp(e) {
+  let txt = `📍 *Report — ${e.loja}* | ${e.dia}\n`;
+  txt += `📊 Meta do dia: *${e.pctMeta}%* (${fmt(e.totalVenda)})\n`;
+  txt += `👥 Clientes atendidos: ${e.clientes}\n`;
+  if (e.curso) {
+    txt += `🎓 Curso: Sim`;
+    if (e.cursoInfo.tema)   txt += ` — ${e.cursoInfo.tema}`;
+    if (e.cursoInfo.quem)   txt += ` (${e.cursoInfo.quem})`;
+    if (e.cursoInfo.alunos) txt += ` | ${e.cursoInfo.alunos} alunos`;
+    if (e.cursoInfo.venda)  txt += ` | ${fmt(e.cursoInfo.venda)} em vendas`;
+    txt += '\n';
+  } else {
+    txt += `🎓 Curso: Não\n`;
+  }
+  txt += `✨ Time: ${e.positivo}\n`;
+  txt += `🛍️ Produto do dia: ${e.produto}`;
+  document.getElementById('wpp-out').textContent = txt;
+}
+
+function copyWpp() {
+  const t = document.getElementById('wpp-out').textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(t).then(() => {
+      const b = document.getElementById('btn-copy-wpp');
+      b.textContent = '✓ Copiado!';
+      setTimeout(() => { b.textContent = 'Copiar para o WhatsApp'; }, 2500);
+    });
+  }
+}
+
+function novoReport() {
+  curStep = 1;
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('s1').classList.add('active');
+  document.getElementById('prog-fill').style.width = '16%';
+  document.getElementById('prog-label').textContent = 'Passo 1 de 6';
+  document.getElementById('prog-pct').textContent = '16%';
+  document.getElementById('header-sub').textContent = 'Preencha ao final do expediente';
+  document.getElementById('btn1').disabled = true;
+  showScreen('sc-form');
+}
+
+function tentarNovamente() {
+  if (!lastEntry) { novoReport(); return; }
+  showScreen('sc-sending');
+  fetch(SHEETS_URL, {
+    method: 'POST', mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(lastEntry)
+  })
+  .then(() => { buildWpp(lastEntry); showScreen('sc-ok'); })
+  .catch(err => {
+    document.getElementById('err-msg').textContent = 'Erro: ' + err.message;
+    showScreen('sc-err');
+  });
+}
+</script>
+</body>
+</html>
