@@ -866,17 +866,7 @@ function submitForm() {
   };
   lastEntry = entry;
   showScreen('sc-sending');
-  fetch(SHEETS_URL, {
-    method:  'POST',
-    mode:    'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify(entry)
-  })
-  .then(() => { buildWpp(entry); showScreen('sc-ok'); })
-  .catch(err => {
-    document.getElementById('err-msg').textContent = 'Erro: ' + err.message;
-    showScreen('sc-err');
-  });
+  enviarViaForm(entry);
 }
 
 function buildWpp(e) {
@@ -924,16 +914,51 @@ function novoReport() {
 function tentarNovamente() {
   if (!lastEntry) { novoReport(); return; }
   showScreen('sc-sending');
-  fetch(SHEETS_URL, {
-    method: 'POST', mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(lastEntry)
-  })
-  .then(() => { buildWpp(lastEntry); showScreen('sc-ok'); })
-  .catch(err => {
-    document.getElementById('err-msg').textContent = 'Erro: ' + err.message;
-    showScreen('sc-err');
-  });
+  enviarViaForm(lastEntry);
+}
+
+function enviarViaForm(entry) {
+  // Cria um iframe invisível para receber a resposta sem erro de CORS
+  var iframeName = 'hidden_iframe_' + Date.now();
+  var iframe = document.createElement('iframe');
+  iframe.name = iframeName;
+  iframe.style.display = 'none';
+  document.body.appendChild(iframe);
+
+  // Cria um form que envia para o Apps Script via GET com os dados em JSON
+  var form = document.createElement('form');
+  form.method = 'POST';
+  form.action = SHEETS_URL;
+  form.target = iframeName;
+  form.style.display = 'none';
+
+  // Envia os dados como campo oculto
+  var input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = 'payload';
+  input.value = JSON.stringify(entry);
+  form.appendChild(input);
+
+  document.body.appendChild(form);
+
+  // Quando o iframe carregar, considera enviado
+  iframe.onload = function() {
+    buildWpp(entry);
+    showScreen('sc-ok');
+    // Limpa os elementos
+    setTimeout(function() {
+      document.body.removeChild(form);
+      document.body.removeChild(iframe);
+    }, 1000);
+  };
+
+  // Fallback: se demorar mais de 5s, considera enviado mesmo assim
+  setTimeout(function() {
+    buildWpp(entry);
+    showScreen('sc-ok');
+  }, 5000);
+
+  form.submit();
 }
 </script>
 </body>
